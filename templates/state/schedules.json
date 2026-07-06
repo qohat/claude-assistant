@@ -1,0 +1,23 @@
+[
+  {
+    "id": "inv-check",
+    "agent": "financial-assistant",
+    "cron": "0 13 * * 1-5",
+    "prompt": "Revisa INVESTMENTS_CHECK_SCHEDULE.md y ejecuta el chequeo que toque hoy. Si no hay nada definido aún, no hagas nada y responde solo '(sin chequeos definidos)'. Resume en máximo 5 líneas.",
+    "enabled": false
+  },
+  {
+    "id": "study-reminder",
+    "agent": "education-assistant",
+    "cron": "0 19 * * 1,3,5",
+    "prompt": "Según EDUCATION_PLAN.md, di cuál es el bloque de estudio de hoy y una tarea concreta. Si no hay plan aún, sugiere definir uno en una línea.",
+    "enabled": false
+  },
+  {
+    "id": "nutrition-weekly",
+    "agent": "nutrition-assistant",
+    "cron": "0 18 * * 0",
+    "prompt": "Haz el repaso semanal: adherencia según ROUTINE.md vs. los planes, y un ajuste para la próxima semana.",
+    "enabled": false
+  }
+]

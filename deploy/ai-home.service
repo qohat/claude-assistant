@@ -1,0 +1,18 @@
+[Unit]
+Description=ai-home: orquestador multi-agente por Telegram (Claude Agent SDK)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=aihome
+WorkingDirectory=/home/aihome/ai-home
+EnvironmentFile=/etc/ai-home.env
+Environment=HOME=/home/aihome
+Environment=PATH=/home/aihome/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/node dist/index.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
