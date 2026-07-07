@@ -15,10 +15,18 @@ if ! id "$SERVICE_USER" &>/dev/null; then
   echo "  - gh + git:     copia ~/.config/gh y ~/.gitconfig de un usuario ya autenticado"
 fi
 
-# ② archivo de credenciales
+# ② archivo de credenciales — los secretos NUNCA van en el repo; el usuario
+#    debe colocarlos aquí (ver README, sección "Variables de entorno").
 if [ ! -f "$ENV_FILE" ]; then
   install -m 600 "$REPO_DIR/deploy/ai-home.env.example" "$ENV_FILE"
-  echo "⚠️  Edita $ENV_FILE con tus credenciales reales antes de arrancar."
+fi
+if grep -qE '123456:ABC|sk-ant-oat01-\.\.\.|^TELEGRAM_BOT_TOKEN=$' "$ENV_FILE"; then
+  echo "⛔ $ENV_FILE todavía tiene valores de ejemplo."
+  echo "   Edítalo con tus credenciales reales y vuelve a correr este script:"
+  echo "     TELEGRAM_BOT_TOKEN        → @BotFather en Telegram"
+  echo "     TELEGRAM_CHAT_ID          → escribe al bot y mira getUpdates"
+  echo "     CLAUDE_CODE_OAUTH_TOKEN   → 'claude setup-token' con tu cuenta Pro/Max"
+  exit 1
 fi
 
 # ③ data dir: crea estructura y siembra plantillas SOLO si el archivo no existe

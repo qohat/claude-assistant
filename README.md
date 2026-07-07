@@ -60,8 +60,25 @@ sudo AI_HOME_DATA=/ai-home bash deploy/setup.sh   # idempotente
 
 Requisitos: Node ≥22 y un usuario de servicio **no root** (claude rechaza
 `bypassPermissions` como root) con el claude CLI instalado y `gh` autenticado.
-Credenciales en `/etc/ai-home.env` (ver `deploy/ai-home.env.example`). El código vive
-en el repo; los datos personales en `AI_HOME_DATA` (por defecto `/ai-home`), fuera de git.
+El código vive en el repo; los datos personales en `AI_HOME_DATA` (por defecto
+`/ai-home`), fuera de git.
+
+## Variables de entorno (secretos)
+
+Ningún secreto vive en el repo. `setup.sh` crea `/etc/ai-home.env` (root:root, 600)
+desde el ejemplo y **se niega a arrancar el servicio hasta que pongas valores reales**:
+
+| Variable | Obligatoria | Cómo obtenerla |
+|---|---|---|
+| `TELEGRAM_BOT_TOKEN` | sí | Crea un bot con [@BotFather](https://t.me/BotFather) (`/newbot`) |
+| `TELEGRAM_CHAT_ID` | sí | Escríbele al bot y consulta `https://api.telegram.org/bot<token>/getUpdates` → `message.chat.id` |
+| `CLAUDE_CODE_OAUTH_TOKEN` | sí | `claude setup-token` con tu cuenta Pro/Max (token de ~1 año) |
+| `CLAUDE_CODE_OAUTH_TOKEN_FALLBACK` | no | Igual, con una segunda cuenta; rota automáticamente al agotarse el cupo |
+| `AI_HOME_DATA` | no | Directorio de datos (por defecto `/ai-home`) |
+
+En producción systemd las inyecta vía `EnvironmentFile=/etc/ai-home.env`. Para
+desarrollo local copia `.env.example` a `.env` y usa `npm run dev` (Node las carga
+con `--env-file`); `.env` está en `.gitignore`.
 
 ## Agregar el agente #5
 
