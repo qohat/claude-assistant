@@ -6,7 +6,13 @@ export const RATE_LIMIT_RE = new RegExp(
   'rate.?limit|usage limit|out of (?:tokens|credits)|too many requests|' +
   'limit reached|429|quota|insufficient.+credit|credit balance is too low',
   'i');
+// Frases inequívocas del mensaje de límite que Claude Code inyecta como texto
+// normal (subtype success, is_error=false), p.ej.
+// "You've hit your session limit · resets 2:10am (UTC)".
+export const LIMIT_TEXT_RE =
+  /(?:you'?ve|I)\s+hit\s+(?:your|my)\s+(?:session|usage|weekly)\s+limit|(?:session|usage)\s+limit\s+reached/i;
 const RESET_RE = /reset[s]?\s+(?:at|in)\s+([^\n.]+)/i;
+const RESET_CLOCK_RE = /resets?\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*\(?(utc)?\)?/i;
 const EPOCH_RE = /\b(\d{9,11})\b/g; // algunos mensajes traen el epoch del reset
 const DUR_H_RE = /(\d+)\s*h(?:our|r)?s?/i;
 const DUR_M_RE = /(\d+)\s*m(?:in)?(?:ute)?s?/i;
@@ -54,6 +60,17 @@ class TokenPool {
       if (h) secs += Number(h[1]) * 3600;
       if (mn) secs += Number(mn[1]) * 60;
       if (secs > 0 && secs <= MAX_COOLDOWN_SEC) return secs;
+    }
+    // "resets 2:10am (UTC)" → próxima ocurrencia de esa hora UTC
+    const clock = RESET_CLOCK_RE.exec(text);
+    if (clock) {
+      let hour = Number(clock[1]);
+      if (clock[3]) hour = hour % 12 + (clock[3].toLowerCase() === 'pm' ? 12 : 0);
+      const at = new Date();
+      at.setUTCHours(hour, Number(clock[2] ?? 0), 0, 0);
+      let delta = at.getTime() / 1000 - now;
+      if (delta < 0) delta += 24 * 3600;
+      if (delta > 0 && delta <= MAX_COOLDOWN_SEC) return delta;
     }
     return null;
   }

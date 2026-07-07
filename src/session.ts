@@ -6,7 +6,7 @@ import { AgentDef } from './agents.js';
 import { CONFIG, memoryDir } from './config.js';
 import { logError } from './logger.js';
 import * as state from './state.js';
-import { RATE_LIMIT_RE, tokenPool } from './tokens.js';
+import { LIMIT_TEXT_RE, RATE_LIMIT_RE, tokenPool } from './tokens.js';
 
 export interface TurnResult {
   ok: boolean;
@@ -15,6 +15,7 @@ export interface TurnResult {
   tokenName: string;
   numTurns: number;
   durationMs: number;
+  resetsAtSec?: number; // epoch del reset reportado por el rate_limit_event
 }
 
 export interface TurnOpts {
@@ -30,7 +31,10 @@ export async function runAgentTurn(agent: AgentDef, prompt: string, opts: TurnOp
     const { name, token } = tokens[i];
     const res = await runOnce(agent, prompt, token, name, opts);
     if (res.reason !== 'rate_limit') return res;
-    const secs = tokenPool.cooldownSecsFromText(res.text) ?? CONFIG.defaultCooldownSec;
+    const fromEvent = res.resetsAtSec ? res.resetsAtSec - Date.now() / 1000 : null;
+    const secs = (fromEvent && fromEvent > 0 ? fromEvent : null)
+      ?? tokenPool.cooldownSecsFromText(res.text)
+      ?? CONFIG.defaultCooldownSec;
     tokenPool.markExhausted(name, secs);
     last = res;
     if (i + 1 < tokens.length) {
@@ -65,21 +69,32 @@ async function runOnce(agent: AgentDef, prompt: string, token: string, tokenName
       },
     });
 
+    // El límite de suscripción puede llegar como evento tipado (lo fiable) o
+    // solo como texto inyectado en un result "success" (visto en producción:
+    // "You've hit your session limit · resets 2:10am (UTC)").
+    let limitResetsAt: number | undefined;
     for await (const msg of q) {
       if (msg.type === 'system' && msg.subtype === 'init') {
         state.setSession(agent.id, msg.session_id);
+      } else if (msg.type === 'rate_limit_event') {
+        if (msg.rate_limit_info.status === 'rejected') {
+          limitResetsAt = msg.rate_limit_info.resetsAt ?? limitResetsAt;
+        }
       } else if (msg.type === 'result') {
         const text = msg.subtype === 'success'
           ? msg.result
           : (msg.errors?.join('\n') || `terminó con ${msg.subtype}`);
-        const isLimit = msg.is_error && RATE_LIMIT_RE.test(text);
+        const isLimit = limitResetsAt !== undefined
+          || LIMIT_TEXT_RE.test(text)
+          || (msg.is_error && RATE_LIMIT_RE.test(text));
         return {
-          ok: !msg.is_error,
+          ok: !msg.is_error && !isLimit,
           reason: isLimit ? 'rate_limit' : msg.is_error ? 'error' : 'ok',
           text: text.slice(0, 8000),
           tokenName,
           numTurns: msg.num_turns,
           durationMs: msg.duration_ms,
+          resetsAtSec: limitResetsAt,
         };
       }
     }
