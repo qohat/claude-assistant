@@ -2,7 +2,7 @@
 // clasificador haiku → agente activo (sticky) → preguntar.
 import { AGENTS, AgentDef, resolveAgentName } from './agents.js';
 import { oneShot } from './session.js';
-import * as state from './state.js';
+import { store } from './state.js';
 
 export type Route =
   | { kind: 'meta'; cmd: string; args: string }
@@ -12,7 +12,15 @@ export type Route =
 const META = ['status', 'agents', 'new', 'stop', 'help', 'start'];
 const MODEL_RE = /\b(?:usa|usando|con(?:\s+el)?(?:\s+modelo)?)\s+(opus|sonnet|haiku)\b/i;
 
-export async function route(text: string): Promise<Route> {
+// Dependencias inyectables para tests: clasificador y estado sticky.
+export interface RouteDeps {
+  classify?: (prompt: string) => Promise<string | null>;
+  state?: { getActiveAgent(): string | null; setActiveAgent(id: string): void };
+}
+
+export async function route(text: string, deps: RouteDeps = {}): Promise<Route> {
+  const classify = deps.classify ?? oneShot;
+  const state = deps.state ?? store;
   const trimmed = text.trim();
 
   // 1. comandos
@@ -42,7 +50,7 @@ export async function route(text: string): Promise<Route> {
 
   // 3. clasificador one-shot (haiku)
   const catalog = AGENTS.map(a => `- ${a.id}: ${a.description}`).join('\n');
-  const answer = await oneShot(
+  const answer = await classify(
     `Clasifica a qué asistente va dirigido este mensaje del usuario.\n` +
     `Asistentes:\n${catalog}\n\nMensaje: """${trimmed.slice(0, 500)}"""\n\n` +
     `Responde SOLO el id del asistente (ej. work-assistant) o "ninguno".`);

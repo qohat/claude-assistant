@@ -35,16 +35,24 @@ export class Scheduler {
     }
   }
 
-  private load(): void {
-    for (const t of this.tasks) t.stop();
-    this.tasks = [];
+  private load(retrying = false): void {
+    // Parsear ANTES de destruir las tareas actuales: un JSON inválido (o un
+    // guardado a medias de un agente) no debe dejar el scheduler vacío.
     let jobs: Job[];
     try {
       jobs = JSON.parse(fs.readFileSync(statePath('schedules.json'), 'utf8')) as Job[];
+      if (!Array.isArray(jobs)) throw new Error('schedules.json no es un array');
     } catch (e) {
-      notifyError('scheduler.load', e, '⚠️ schedules.json inválido; no hay jobs programados.');
+      if (!retrying) {
+        // puede ser una escritura en curso: reintenta una vez a los 2s
+        setTimeout(() => this.load(true), 2000);
+      } else {
+        notifyError('scheduler.load', e, '⚠️ schedules.json inválido; conservo los jobs anteriores.');
+      }
       return;
     }
+    for (const t of this.tasks) t.stop();
+    this.tasks = [];
     for (const job of jobs) {
       if (!job.enabled) continue;
       const agent = resolveAgentName(job.agent);

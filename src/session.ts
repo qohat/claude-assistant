@@ -1,16 +1,19 @@
 // Motor de sesiones: un turno de un agente = query() del Agent SDK con la
-// sesión resumible del agente, su carpeta de memoria como cwd y autonomía total.
-// Rota tokens del pool ante límite de uso y reintenta el mismo turno.
+// sesión resumible del agente, su carpeta de memoria como cwd, autonomía total
+// y su memoria engram montada como servidor MCP (proyecto = id del agente).
+// Rota tokens del pool ante límite de uso y reintenta el mismo turno; los
+// errores transitorios (red, 5xx) se reintentan con backoff exponencial.
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import { AgentDef } from './agents.js';
-import { CONFIG, memoryDir } from './config.js';
+import { CONFIG, engramDataDir, memoryDir } from './config.js';
 import { logError } from './logger.js';
-import * as state from './state.js';
-import { LIMIT_TEXT_RE, RATE_LIMIT_RE, tokenPool } from './tokens.js';
+import { store as state } from './state.js';
+import { LIMIT_TEXT_RE, RATE_LIMIT_RE, TRANSIENT_RE, tokenPool } from './tokens.js';
 
 export interface TurnResult {
   ok: boolean;
   reason: 'ok' | 'rate_limit' | 'error' | 'aborted';
+  subtype?: string;      // subtype del result del SDK (p.ej. 'error_max_turns')
   text: string;
   tokenName: string;
   numTurns: number;
@@ -21,15 +24,22 @@ export interface TurnResult {
 export interface TurnOpts {
   modelOverride?: string;
   onTokenSwap?: (msg: string) => void; // aviso a Telegram al rotar de cuenta
+  onRetry?: (msg: string) => void;     // aviso al reintentar un error transitorio
   abortController?: AbortController;
 }
+
+const sleep = (ms: number, signal?: AbortSignal) =>
+  new Promise<void>(resolve => {
+    const t = setTimeout(resolve, ms);
+    signal?.addEventListener('abort', () => { clearTimeout(t); resolve(); }, { once: true });
+  });
 
 export async function runAgentTurn(agent: AgentDef, prompt: string, opts: TurnOpts = {}): Promise<TurnResult> {
   const tokens = tokenPool.usable();
   let last: TurnResult | null = null;
   for (let i = 0; i < tokens.length; i++) {
     const { name, token } = tokens[i];
-    const res = await runOnce(agent, prompt, token, name, opts);
+    const res = await runOnceWithRetry(agent, prompt, token, name, opts);
     if (res.reason !== 'rate_limit') return res;
     const fromEvent = res.resetsAtSec ? res.resetsAtSec - Date.now() / 1000 : null;
     const secs = (fromEvent && fromEvent > 0 ? fromEvent : null)
@@ -46,9 +56,31 @@ export async function runAgentTurn(agent: AgentDef, prompt: string, opts: TurnOp
   return last ?? { ok: false, reason: 'error', text: 'sin tokens utilizables', tokenName: 'env', numTurns: 0, durationMs: 0 };
 }
 
+/** Reintenta errores transitorios (red, 5xx) con backoff 5s/15s/45s sin
+ *  cambiar de token. El rate-limit NO se reintenta aquí: rota de token arriba. */
+async function runOnceWithRetry(agent: AgentDef, prompt: string, token: string, tokenName: string, opts: TurnOpts): Promise<TurnResult> {
+  let res = await runOnce(agent, prompt, token, tokenName, opts);
+  for (let attempt = 0; attempt < CONFIG.transientRetries; attempt++) {
+    if (res.reason !== 'error' || !TRANSIENT_RE.test(res.text)) return res;
+    if (opts.abortController?.signal.aborted) return res;
+    const waitSec = 5 * 3 ** attempt; // 5s, 15s, 45s
+    opts.onRetry?.(`🔄 Error transitorio (${res.text.slice(0, 120)}). Reintento ${attempt + 1}/${CONFIG.transientRetries} en ${waitSec}s.`);
+    await sleep(waitSec * 1000, opts.abortController?.signal);
+    if (opts.abortController?.signal.aborted) {
+      return { ...res, reason: 'aborted', text: 'detenido por el usuario' };
+    }
+    res = await runOnce(agent, prompt, token, tokenName, opts);
+  }
+  return res;
+}
+
 async function runOnce(agent: AgentDef, prompt: string, token: string, tokenName: string, opts: TurnOpts): Promise<TurnResult> {
   const start = Date.now();
-  const env: Record<string, string | undefined> = { ...process.env, CLAUDE_CODE_OAUTH_TOKEN: token };
+  const env: Record<string, string | undefined> = {
+    ...process.env,
+    CLAUDE_CODE_OAUTH_TOKEN: token,
+    ENGRAM_DATA_DIR: engramDataDir(),
+  };
   delete env.ANTHROPIC_API_KEY; // que una API key no pise el OAuth (lección de v1)
   const resume = state.getSession(agent.id);
 
@@ -64,6 +96,16 @@ async function runOnce(agent: AgentDef, prompt: string, token: string, tokenName
         settingSources: ['project'],           // carga el CLAUDE.md del agente
         systemPrompt: { type: 'preset', preset: 'claude_code' },
         maxTurns: CONFIG.maxTurns,
+        // Memoria persistente: servidor MCP engram scopeado al agente.
+        mcpServers: {
+          engram: {
+            type: 'stdio',
+            command: CONFIG.engramBin,
+            args: ['mcp', '--tools=agent', '--project', agent.id],
+            env: { ENGRAM_DATA_DIR: engramDataDir() },
+            alwaysLoad: true,
+          },
+        },
         env,
         abortController: opts.abortController,
       },
@@ -90,6 +132,7 @@ async function runOnce(agent: AgentDef, prompt: string, token: string, tokenName
         return {
           ok: !msg.is_error && !isLimit,
           reason: isLimit ? 'rate_limit' : msg.is_error ? 'error' : 'ok',
+          subtype: msg.subtype,
           text: text.slice(0, 8000),
           tokenName,
           numTurns: msg.num_turns,

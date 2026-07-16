@@ -7,13 +7,23 @@ import { logError } from './logger.js';
 const BASE = () => `https://api.telegram.org/bot${CONFIG.telegramToken}`;
 const CHUNK = 3800;
 
+/** Canal de mensajería del orquestador. Implementaciones: Telegram (producción)
+ *  y ConsoleMessenger (pruebas locales con AI_HOME_CONSOLE=1). */
+export interface Messenger {
+  send(text: string): Promise<void>;
+  sendTyping(): Promise<void>;
+  setCommands(commands: { command: string; description: string }[]): Promise<void>;
+  pollLoop(onMessage: (text: string) => void): Promise<void>;
+  stop(): void;
+}
+
 interface TgUpdate {
   update_id: number;
   message?: { text?: string; chat: { id: number } };
   edited_message?: { text?: string; chat: { id: number } };
 }
 
-export class Telegram {
+export class Telegram implements Messenger {
   private offset = 0;
   private stopped = false;
 

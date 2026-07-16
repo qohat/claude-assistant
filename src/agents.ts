@@ -19,7 +19,7 @@ export const AGENTS: AgentDef[] = [
     aliases: ['repo', 'repos', 'pr', 'issue', 'issues', 'código', 'codigo', 'deploy',
       'branch', 'rama', 'commit', 'merge', 'github', 'bug', 'clona', 'clonar', 'answeringit', 'answering-it'],
     model: 'sonnet',
-    description: 'Trabajo y código: clona repos en work/, implementa, prueba y abre PRs con gh. Memoria: REPOS.md (repos registrados) y BRAIN.md (cómo trabajas).',
+    description: 'Trabajo y código: clona repos en work/, implementa, prueba y abre PRs con gh. Memoria engram: repos registrados, convenciones y decisiones de trabajo.',
     extraDirs: ['work'],
   },
   {
@@ -30,7 +30,7 @@ export const AGENTS: AgentDef[] = [
       'nutricion', 'macros', 'proteína', 'proteina', 'entrené', 'entrene', 'entrenamiento',
       'gym', 'gimnasio', 'rutina', 'mercado', 'calorías', 'calorias'],
     model: 'sonnet',
-    description: 'Nutrición y entrenamiento: plan alimenticio, plan de entrenamiento, tracking de comidas y rutina. Memoria: NUTRITION_PLAN.md, TRAINING_PLAN.md, ROUTINE.md.',
+    description: 'Nutrición y entrenamiento: plan alimenticio, plan de entrenamiento, tracking de comidas y rutina. Memoria engram: planes, preferencias y registro diario.',
     extraDirs: [],
   },
   {
@@ -40,7 +40,7 @@ export const AGENTS: AgentDef[] = [
     aliases: ['inversión', 'inversion', 'inversiones', 'finanzas', 'dinero', 'plata', 'acciones',
       'crypto', 'cripto', 'bitcoin', 'etf', 'portafolio', 'portfolio', 'mercado bursátil', 'ahorro', 'presupuesto'],
     model: 'sonnet',
-    description: 'Finanzas e inversiones: portafolio, chequeos programados, análisis en investments/. Memoria: INVESTMENTS.md, INVESTMENTS_CHECK_SCHEDULE.md, BRAIN.md.',
+    description: 'Finanzas e inversiones: portafolio, chequeos programados, análisis en investments/. Memoria engram: portafolio, estrategia y chequeos definidos.',
     extraDirs: ['investments'],
   },
   {
@@ -50,7 +50,7 @@ export const AGENTS: AgentDef[] = [
     aliases: ['estudio', 'estudiar', 'certificación', 'certificacion', 'certificaciones', 'examen',
       'curso', 'cursos', 'aprender', 'aws', 'kubernetes', 'ckad', 'cka', 'plan de estudio'],
     model: 'sonnet',
-    description: 'Estudio y certificaciones: plan de estudio, seguimiento de progreso, material en courses/. Memoria: EDUCATION_PLAN.md, CERTIFICATIONS.md, BRAIN.md.',
+    description: 'Estudio y certificaciones: plan de estudio, seguimiento de progreso, material en courses/. Memoria engram: plan de estudio, certificaciones y avance.',
     extraDirs: ['courses'],
   },
 ];

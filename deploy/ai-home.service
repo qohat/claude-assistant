@@ -13,6 +13,8 @@ Environment=PATH=/home/aihome/.local/bin:/usr/local/bin:/usr/bin:/bin
 ExecStart=/usr/bin/node dist/index.js
 Restart=always
 RestartSec=5
+# SIGTERM → shutdown ordenado (aborta runs y persiste la cola en el journal)
+TimeoutStopSec=30
 
 [Install]
 WantedBy=multi-user.target

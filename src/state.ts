@@ -1,54 +1,73 @@
 // Estado persistente pequeño: sesiones por agente + agente activo (sticky).
-// Escritura atómica: tmp + rename.
+// Se carga UNA vez al arrancar y vive en memoria; las escrituras van por el
+// escritor atómico serializado (dos agentes terminando a la vez ya no se
+// pisan el session id, y un archivo corrupto se aparta en vez de perderse).
 import fs from 'node:fs';
 import { statePath } from './config.js';
 import { logError } from './logger.js';
+import { atomicJsonWriter, JsonWriter } from './persist.js';
 
 interface SessionEntry { sessionId: string; updatedAt: string }
 interface StateFile { sessions: Record<string, SessionEntry>; activeAgent: string | null }
 
-const FILE = () => statePath('sessions.json');
+export class StateStore {
+  private data: StateFile;
+  private writer: JsonWriter;
 
-function load(): StateFile {
-  try {
-    return JSON.parse(fs.readFileSync(FILE(), 'utf8')) as StateFile;
-  } catch {
-    return { sessions: {}, activeAgent: null };
+  constructor(private file = statePath('sessions.json')) {
+    this.writer = atomicJsonWriter(this.file);
+    this.data = this.loadSync();
+  }
+
+  private loadSync(): StateFile {
+    let raw: string;
+    try {
+      raw = fs.readFileSync(this.file, 'utf8');
+    } catch {
+      return { sessions: {}, activeAgent: null }; // no existe: estado inicial
+    }
+    try {
+      const parsed = JSON.parse(raw) as Partial<StateFile>;
+      return { sessions: parsed.sessions ?? {}, activeAgent: parsed.activeAgent ?? null };
+    } catch (e) {
+      // corrupto: apartar, nunca pisar (podría recuperarse a mano)
+      logError('state.load', e);
+      try { fs.renameSync(this.file, `${this.file}.corrupt`); } catch { /* best effort */ }
+      return { sessions: {}, activeAgent: null };
+    }
+  }
+
+  private persist(): void {
+    void this.writer.write(this.data);
+  }
+
+  getSession(agentId: string): string | undefined {
+    return this.data.sessions[agentId]?.sessionId;
+  }
+
+  setSession(agentId: string, sessionId: string): void {
+    this.data.sessions[agentId] = { sessionId, updatedAt: new Date().toISOString() };
+    this.persist();
+  }
+
+  clearSession(agentId: string): void {
+    delete this.data.sessions[agentId];
+    this.persist();
+  }
+
+  getActiveAgent(): string | null {
+    return this.data.activeAgent;
+  }
+
+  setActiveAgent(agentId: string): void {
+    this.data.activeAgent = agentId;
+    this.persist();
+  }
+
+  /** Espera a que las escrituras pendientes lleguen a disco (shutdown/tests). */
+  flush(): Promise<void> {
+    return this.writer.flush();
   }
 }
 
-function save(data: StateFile): void {
-  try {
-    const tmp = FILE() + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify(data, null, 2));
-    fs.renameSync(tmp, FILE());
-  } catch (e) {
-    logError('state.save', e);
-  }
-}
-
-export function getSession(agentId: string): string | undefined {
-  return load().sessions[agentId]?.sessionId;
-}
-
-export function setSession(agentId: string, sessionId: string): void {
-  const data = load();
-  data.sessions[agentId] = { sessionId, updatedAt: new Date().toISOString() };
-  save(data);
-}
-
-export function clearSession(agentId: string): void {
-  const data = load();
-  delete data.sessions[agentId];
-  save(data);
-}
-
-export function getActiveAgent(): string | null {
-  return load().activeAgent;
-}
-
-export function setActiveAgent(agentId: string): void {
-  const data = load();
-  data.activeAgent = agentId;
-  save(data);
-}
+export const store = new StateStore();
