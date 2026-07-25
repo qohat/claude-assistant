@@ -1,0 +1,513 @@
+<style>
+  :root {
+    --bg: #0d1210;
+    --surface: #161d1a;
+    --surface-2: #1d2622;
+    --ink: #e8ece9;
+    --muted: #93a39b;
+    --accent: #ff9b52;
+    --accent-2: #57c8b9;
+    --rule: rgba(255,255,255,0.09);
+    --code-ink: #d7ffd0;
+  }
+  :root[data-theme="light"] {
+    --bg: #f6f4ef;
+    --surface: #ffffff;
+    --surface-2: #eeebe2;
+    --ink: #1b211d;
+    --muted: #5c6b63;
+    --accent: #c9611e;
+    --accent-2: #157a6c;
+    --rule: rgba(20,25,22,0.10);
+    --code-ink: #0f3d16;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f6f4ef;
+      --surface: #ffffff;
+      --surface-2: #eeebe2;
+      --ink: #1b211d;
+      --muted: #5c6b63;
+      --accent: #c9611e;
+      --accent-2: #157a6c;
+      --rule: rgba(20,25,22,0.10);
+      --code-ink: #0f3d16;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", "IBM Plex Sans", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+    padding: 0;
+    margin: 0;
+  }
+
+  .mono {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace;
+  }
+
+  .wrap {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 5rem;
+  }
+
+  header.masthead {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    padding-bottom: 2rem;
+    margin-bottom: 2.5rem;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .eyebrow {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+  }
+
+  h1 {
+    font-size: clamp(2.1rem, 5vw, 2.9rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .tagline {
+    color: var(--muted);
+    font-size: 1.05rem;
+    max-width: 56ch;
+    margin: 0;
+  }
+
+  .status-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.9rem;
+    margin-top: 0.4rem;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 0.8rem;
+    padding: 0.32rem 0.7rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    color: var(--ink);
+  }
+
+  .pill .dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--accent-2);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-2) 25%, transparent);
+    flex-shrink: 0;
+  }
+
+  .clone-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 1rem 1.15rem;
+  }
+
+  .clone-block .label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+
+  .clone-block code {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
+    font-size: 0.92rem;
+    color: var(--code-ink);
+    word-break: break-all;
+  }
+
+  section {
+    margin-bottom: 3rem;
+  }
+
+  h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 0.3rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+  }
+
+  h2 .accent-bar {
+    width: 0.3rem;
+    height: 1rem;
+    background: var(--accent);
+    border-radius: 2px;
+    display: inline-block;
+    transform: translateY(1px);
+  }
+
+  .section-sub {
+    color: var(--muted);
+    font-size: 0.94rem;
+    margin: 0 0 1.2rem;
+    max-width: 62ch;
+  }
+
+  .diagram-frame {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 1.4rem;
+    overflow-x: auto;
+  }
+
+  ol.steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: step;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  ol.steps li {
+    counter-increment: step;
+    position: relative;
+    padding: 0.9rem 0 0.9rem 3rem;
+    border-left: 2px solid var(--rule);
+    margin-left: 0.9rem;
+  }
+
+  ol.steps li:last-child {
+    border-left: 2px solid transparent;
+  }
+
+  ol.steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: -0.95rem;
+    top: 0.75rem;
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 50%;
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    color: var(--accent-2);
+    font-family: ui-monospace, monospace;
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  ol.steps strong { font-weight: 600; }
+  ol.steps span.detail { color: var(--muted); font-size: 0.92rem; }
+
+  .table-scroll {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    min-width: 640px;
+  }
+
+  thead th {
+    text-align: left;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    background: var(--surface-2);
+    padding: 0.65rem 0.9rem;
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+
+  tbody td {
+    padding: 0.75rem 0.9rem;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  tbody td.agent-id {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  td .types {
+    font-family: ui-monospace, monospace;
+    font-size: 0.82rem;
+    color: var(--accent-2);
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 1.1rem 1.2rem;
+  }
+
+  .card h3 {
+    font-size: 0.95rem;
+    margin: 0 0 0.4rem;
+    font-weight: 600;
+  }
+
+  .card p {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+
+  pre.ops {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 1rem 1.15rem;
+    overflow-x: auto;
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
+    font-size: 0.85rem;
+    color: var(--code-ink);
+    line-height: 1.7;
+    margin: 0;
+  }
+
+  .env-note {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 0.8rem;
+  }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-top: 1.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  footer a {
+    color: var(--accent-2);
+  }
+
+  a { color: var(--accent-2); }
+
+  .req-list {
+    margin: 0.6rem 0 0;
+    padding-left: 1.1rem;
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+
+  .req-list li { margin-bottom: 0.2rem; }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <span class="eyebrow">Documentación de arquitectura</span>
+    <h1>ai-home</h1>
+    <p class="tagline">Orquestador multi-agente por Telegram sobre el Claude Agent SDK. Un bot, cuatro asistentes con memoria propia, resiliencia a reinicios y errores transitorios.</p>
+    <div class="status-row">
+      <span class="pill"><span class="dot"></span>ai-home.service · activo</span>
+      <span class="pill mono">aihome@host · systemd</span>
+      <span class="pill mono">Node ≥ 22</span>
+    </div>
+    <div class="clone-block">
+      <span class="label">Clonar</span>
+      <code>git clone https://github.com/qohat/claude-assistant.git ai-home</code>
+    </div>
+  </header>
+
+  <section id="overview">
+    <h2><span class="accent-bar"></span>Arquitectura general</h2>
+    <p class="section-sub">Telegram y la consola de desarrollo entran por el mismo punto; el router decide a qué agente pertenece cada mensaje y lo encola. Cada agente corre su turno de forma resumible, con su propia partición de memoria en engram.</p>
+    <div class="diagram-frame">
+<pre class="mermaid">
+flowchart TD
+    TG["Telegram · long-poll"] --> IN
+    CON["Consola · AI_HOME_CONSOLE=1"] --> IN
+    IN["Entrada serializada<br/>orchestrator.handleMessage"] --> R["router.ts<br/>comandos → keywords → haiku → sticky"]
+    SCH["scheduler.ts<br/>cron sobre state/schedules.json"] --> Q
+    R --> Q["Colas por agente<br/>journal en state/queue.json"]
+    Q --> W["💼 work"]
+    Q --> N["🥗 nutrition"]
+    Q --> F["💰 financial"]
+    Q --> E["📚 education"]
+    W & N & F & E --> RUN["runAgentTurn<br/>query · resume · retry transitorio · auto-continue"]
+    RUN --> MCP["engram MCP stdio<br/>mem_save / mem_search / mem_context<br/>proyecto = id del agente"]
+    MCP --> DB[("SQLite + FTS5")]
+    RUN --> ST[("state/sessions.json")]
+</pre>
+    </div>
+  </section>
+
+  <section id="flow">
+    <h2><span class="accent-bar"></span>Flujo de un mensaje</h2>
+    <p class="section-sub">Del mensaje de Telegram a la respuesta, en orden.</p>
+    <ol class="steps">
+      <li><strong>Entrada serializada.</strong> <span class="detail">Telegram (long-poll) o la consola (<code class="mono">AI_HOME_CONSOLE=1</code>) alimentan la misma cola de entrada; dos mensajes seguidos se procesan en el orden en que llegaron aunque el clasificador tarde.</span></li>
+      <li><strong>Enrutado.</strong> <span class="detail"><code class="mono">router.ts</code> resuelve el agente por comando explícito (<code class="mono">/work</code>, <code class="mono">/food</code>…), luego por keywords, luego con un clasificador one-shot en Haiku, y por último por "sticky" (último agente usado).</span></li>
+      <li><strong>Cola por agente.</strong> <span class="detail">El mensaje se encola para su agente. Cada mutación de cola se snapshotea en <code class="mono">state/queue.json</code> — sobrevive a un crash o reinicio del proceso.</span></li>
+      <li><strong>Turno del agente.</strong> <span class="detail"><code class="mono">runAgentTurn</code> reanuda la sesión del SDK, monta engram como MCP (<code class="mono">--project &lt;agente&gt;</code>), corre con <code class="mono">bypassPermissions</code>, reintenta errores transitorios (5s/15s/45s) y auto-continúa si se agota <code class="mono">maxTurns</code>.</span></li>
+      <li><strong>Memoria y respuesta.</strong> <span class="detail">El agente guarda contexto en engram (SQLite + FTS5, aislado por proyecto) y la respuesta vuelve por el mismo canal que la originó.</span></li>
+    </ol>
+  </section>
+
+  <section id="agents">
+    <h2><span class="accent-bar"></span>Los cuatro agentes</h2>
+    <p class="section-sub">Definidos en <code class="mono">src/agents.ts</code>; agregar un quinto es una entrada nueva ahí más una carpeta en <code class="mono">templates/memory/&lt;id&gt;/</code>.</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Agente</th><th>Comando</th><th>Modelo</th><th>Memoria engram</th><th>Carpetas propias</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="agent-id">💼 work-assistant</td>
+            <td class="mono">/work</td>
+            <td class="mono">sonnet</td>
+            <td><span class="types">repo · convencion · decision</span></td>
+            <td class="mono">work/</td>
+          </tr>
+          <tr>
+            <td class="agent-id">🥗 nutrition-assistant</td>
+            <td class="mono">/food</td>
+            <td class="mono">sonnet</td>
+            <td><span class="types">plan · preferencia · registro</span></td>
+            <td class="mono">—</td>
+          </tr>
+          <tr>
+            <td class="agent-id">💰 financial-assistant</td>
+            <td class="mono">/money</td>
+            <td class="mono">sonnet</td>
+            <td><span class="types">portafolio · estrategia · chequeo</span></td>
+            <td class="mono">investments/</td>
+          </tr>
+          <tr>
+            <td class="agent-id">📚 education-assistant</td>
+            <td class="mono">/study</td>
+            <td class="mono">sonnet</td>
+            <td><span class="types">plan · certificacion · avance</span></td>
+            <td class="mono">courses/</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="env-note">Meta-comandos válidos para cualquiera: <code class="mono">/status</code>, <code class="mono">/agents</code>, <code class="mono">/new &lt;agente&gt;</code> (sesión nueva, la memoria engram persiste), <code class="mono">/stop &lt;agente&gt;</code>, <code class="mono">/help</code>. Decir "usa opus" dentro de un mensaje corre ese turno con otro modelo.</p>
+  </section>
+
+  <section id="memory">
+    <h2><span class="accent-bar"></span>Memoria (engram)</h2>
+    <p class="section-sub">Cada turno monta <code class="mono">engram mcp --tools=agent --project &lt;agente&gt;</code> sobre <code class="mono">ENGRAM_DATA_DIR=&lt;data&gt;/engram</code>. Los cuatro agentes comparten binario y base SQLite, pero cada uno ve solo su propio proyecto.</p>
+    <div class="card-grid">
+      <div class="card">
+        <h3>Protocolo por CLAUDE.md</h3>
+        <p>Cada agente carga su <code class="mono">CLAUDE.md</code> vía <code class="mono">settingSources: ['project']</code>: <code class="mono">mem_context</code> al empezar, <code class="mono">mem_save</code> proactivo con tipos estables, checkpoints de <code class="mono">progreso</code> en tareas largas y <code class="mono">mem_session_end</code> al cerrar.</p>
+      </div>
+      <div class="card">
+        <h3>Onboarding en frío</h3>
+        <p>Primera sesión sin session id guardado → el orquestador inyecta un hint; si la memoria está vacía, el agente entrevista al usuario por Telegram. work-assistant se auto-siembra desde repos ya clonados.</p>
+      </div>
+      <div class="card">
+        <h3>Memoria legada</h3>
+        <p><code class="mono">setup.sh</code> archiva los <code class="mono">.md</code> viejos en <code class="mono">memory/&lt;agente&gt;/archive/</code> — solo lectura, sin migración automática hacia engram.</p>
+      </div>
+      <div class="card">
+        <h3>Sesión resumible</h3>
+        <p><code class="mono">state/sessions.json</code> guarda la conversación resumible del SDK por agente; <code class="mono">/new</code> la reinicia sin tocar la memoria engram.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="resilience">
+    <h2><span class="accent-bar"></span>Resiliencia</h2>
+    <div class="card-grid">
+      <div class="card">
+        <h3>Journal de colas</h3>
+        <p>Cada mutación de <code class="mono">state/queue.json</code> se snapshotea. Tras crash o reinicio, <code class="mono">restore()</code> re-encola lo pendiente y lo que estaba en curso.</p>
+      </div>
+      <div class="card">
+        <h3>Apagado ordenado</h3>
+        <p>SIGTERM/SIGINT aborta los runs activos, pasa lo en-curso a pendiente en el journal y persiste estado (<code class="mono">TimeoutStopSec=30</code> en systemd).</p>
+      </div>
+      <div class="card">
+        <h3>Errores transitorios</h3>
+        <p>Red, 5xx, timeouts: reintento en el mismo turno con backoff 5s/15s/45s (<code class="mono">AI_HOME_TRANSIENT_RETRIES</code>, default 3).</p>
+      </div>
+      <div class="card">
+        <h3>maxTurns agotado</h3>
+        <p>Auto-continúa la misma sesión hasta <code class="mono">AI_HOME_MAX_CONTINUES</code> veces (default 2); los checkpoints de <code class="mono">progreso</code> evitan perder el hilo.</p>
+      </div>
+      <div class="card">
+        <h3>Estado atómico</h3>
+        <p><code class="mono">sessions.json</code> y <code class="mono">queue.json</code> se escriben serializados, con tmp+rename; un archivo corrupto se aparta como <code class="mono">.corrupt</code>, nunca se pisa.</p>
+      </div>
+      <div class="card">
+        <h3>Rotación de tokens</h3>
+        <p>Pool <code class="mono">default</code> → <code class="mono">fallback</code>. Ante límite de suscripción: cooldown calculado, aviso por Telegram y reintento automático con la otra cuenta.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="proactivity">
+    <h2><span class="accent-bar"></span>Proactividad</h2>
+    <p class="section-sub"><code class="mono">state/schedules.json</code> define jobs cron por agente. El scheduler recarga al detectar cambios en el archivo — <strong>los propios agentes pueden editarlo</strong> (ej. "recuérdame estudiar L-M-V a las 7pm"). Un JSON inválido no destruye los jobs ya cargados: se reintenta y se conserva lo anterior. El resultado de cada job llega por Telegram.</p>
+  </section>
+
+  <section id="ops">
+    <h2><span class="accent-bar"></span>Operación</h2>
+    <pre class="ops">systemctl status ai-home        # estado
+journalctl -u ai-home -f        # salida en vivo
+cat &lt;data&gt;/state/logs/error.log # solo errores
+engram tui                      # explorar la memoria (ENGRAM_DATA_DIR=&lt;data&gt;/engram)</pre>
+    <p class="env-note">Requisitos para instalar en un host nuevo:</p>
+    <ul class="req-list">
+      <li>Node ≥ 22 y un usuario de servicio no root (Claude rechaza <code class="mono">bypassPermissions</code> corriendo como root).</li>
+      <li><code class="mono">claude</code> CLI instalado y <code class="mono">gh</code> autenticado en ese usuario.</li>
+      <li>Secretos en <code class="mono">/etc/ai-home.env</code> (600, root:root): <code class="mono">TELEGRAM_BOT_TOKEN</code>, <code class="mono">TELEGRAM_CHAT_ID</code>, <code class="mono">CLAUDE_CODE_OAUTH_TOKEN</code> — <code class="mono">setup.sh</code> se niega a arrancar el servicio hasta que estén reales.</li>
+      <li>Datos personales fuera de git, en <code class="mono">AI_HOME_DATA</code> (default <code class="mono">/ai-home</code>).</li>
+    </ul>
+  </section>
+
+  <footer>
+    <span>Repo: <a href="https://github.com/qohat/claude-assistant">github.com/qohat/claude-assistant</a> · rama <span class="mono">main</span></span>
+    <span>Instalación: <span class="mono">git clone https://github.com/qohat/claude-assistant.git &amp;&amp; cd claude-assistant &amp;&amp; sudo AI_HOME_DATA=/ai-home bash deploy/setup.sh</span></span>
+  </footer>
+
+</div>
